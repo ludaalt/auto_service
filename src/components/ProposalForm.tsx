@@ -55,9 +55,14 @@ const schema = yup.object().shape({
 interface ProposalFormProps {
   mode: 'new' | 'draft';
   proposal?: Partial<IProposal> & Pick<IProposal, 'id'>;
+  onStatusWaitHandle?: (value: boolean) => void;
 }
 
-const ProposalForm: FC<ProposalFormProps> = ({ mode, proposal }) => {
+const ProposalForm: FC<ProposalFormProps> = ({
+  mode,
+  proposal,
+  onStatusWaitHandle,
+}) => {
   const navigate = useNavigate();
   const dictionaryData = useSelector(getDictionarySelector).data;
   const dispatch = useDispatch<AppDispatch>();
@@ -77,20 +82,27 @@ const ProposalForm: FC<ProposalFormProps> = ({ mode, proposal }) => {
   });
 
   const onSubmitHandler = async (data: IFormProposalData) => {
-    const convertedProposalData = convertProposalObject(
-      data,
-      dictionaryData,
-      proposalsTotalCount + 1000,
-    );
-
     if (mode === 'new') {
+      const convertedProposalData = convertProposalObject(
+        data,
+        dictionaryData,
+        proposalsTotalCount + 1000,
+      );
+
       await dispatch(createNewProposal(convertedProposalData));
       navigate('/proposals');
     }
 
     if (mode === 'draft') {
-      setIsSentReadyDraft(true);
+      const convertedProposalData = convertProposalObject(
+        data,
+        dictionaryData,
+        proposal!.id,
+      );
+
       await dispatch(sentReadyDraft(convertedProposalData));
+      onStatusWaitHandle?.(true);
+      setIsSentReadyDraft(true);
     }
   };
 
@@ -224,6 +236,7 @@ const ProposalForm: FC<ProposalFormProps> = ({ mode, proposal }) => {
             </MenuItem>
           ))}
         </TextField>
+
         <ErrorLabel sx={{ fontSize: 12 }}>{errors.city?.message}</ErrorLabel>
 
         <TextField

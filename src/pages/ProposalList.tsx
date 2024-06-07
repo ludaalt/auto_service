@@ -21,7 +21,7 @@ import {
   getProposalsSelector,
 } from '../store/proposals/getproposalsSlice';
 import { getObjectProperty } from '../helpers/getObjectProperty';
-import type { IProposal } from '../types/types';
+import type { IProposal, IPersonType } from '../types/types';
 import type { AppDispatch } from '../store/store';
 import { proposalListTableHeadCells } from '../const/const';
 import { getDictionaryItem } from '../helpers/getDictionaryItem';
@@ -39,19 +39,27 @@ const StyledBox = styled(Box)`
 
 import { getDictionarySelector } from '../store/dictionary/getDictionarySlice';
 
+export interface ITableRowItem {
+  id: number;
+  status: { code?: string };
+  city: { code?: string };
+  auto: { autoCategory: { code?: string }; model: { code?: string } };
+  person: IPersonType;
+}
+
 const ProposalList: FC = () => {
-  const { data, waitProposalStatus } = useSelector(getProposalsSelector);
+  const { data } = useSelector(getProposalsSelector);
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const [dataRows, setDataRows] = useState([]);
+  const [dataRows, setDataRows] = useState<ITableRowItem[] | []>([]);
   const dictionaryData = useSelector(getDictionarySelector).data;
 
   const convertedTableData = (data: IProposal[]) => {
-    return data?.map((item: IProposal) => {
+    return data?.map((item: IProposal & { autoCategoryId?: number }) => {
       return {
         ...item,
         city: {
-          code: getDictionaryItem('CITIES', item.city.code as string),
+          code: getDictionaryItem('CITIES', item.city.code),
         },
         auto: {
           autoCategory: {
@@ -79,23 +87,8 @@ const ProposalList: FC = () => {
   };
 
   useEffect(() => {
-    const socket = new WebSocket('ws://194.87.145.144:5000');
-
-    socket.addEventListener('open', (event) => {
-      socket.send('Соединение с сервером');
-    });
-
-    socket.addEventListener('message', (event) => {
-      console.log('Обновление статуса заявки', event.data);
-      dispatch(getProposals());
-    });
-
-    return () => socket.close();
-  }, [waitProposalStatus, dispatch]);
-
-  useEffect(() => {
     dispatch(getProposals());
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     if (data.length > 0) {
@@ -144,7 +137,7 @@ const ProposalList: FC = () => {
   const [orderBy, setOrderBy] = useState<string>('id');
 
   // функция использует состояние компонента
-  const sortArray = (arr: IProposal[], key: string) => {
+  const sortArray = (arr: ITableRowItem[], key: string) => {
     return [...arr].sort((a, b) => {
       const a_key = getObjectProperty(a, key);
       const b_key = getObjectProperty(b, key);
@@ -170,19 +163,29 @@ const ProposalList: FC = () => {
       setDataRows(convertedTableData(data));
       return;
     } else {
-      const newState = convertedTableData(data).filter((item: IProposal) => {
-        return getObjectProperty(item, key)
-          .toString()
-          .toLowerCase()
-          .includes(e.target.value.toLowerCase());
-      });
+      const newState = convertedTableData(data).filter(
+        (item: ITableRowItem) => {
+          const match = (key: string) => {
+            return getObjectProperty(item, key)
+              .toString()
+              .toLowerCase()
+              .includes(e.target.value.toLowerCase());
+          };
+
+          if (key.includes('person')) {
+            return match('person.firstName') || match('person.lastName');
+          }
+
+          return match(key);
+        },
+      );
 
       setDataRows(newState);
     }
   };
 
   const handleSortRequest = (e: React.MouseEvent, property: string) => {
-    if (dataRows) {
+    if (dataRows.length > 0) {
       setOrderDirection(orderDirection === 'asc' ? 'desc' : 'asc');
       setOrderBy(property);
 
@@ -242,7 +245,7 @@ const ProposalList: FC = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {dataRows?.map((row: IProposal, id: number) => (
+            {dataRows?.map((row: ITableRowItem, id: number) => (
               <TableRow
                 onClick={() => navigate(`/proposals/${row.id}`)}
                 key={id}

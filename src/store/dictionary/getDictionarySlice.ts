@@ -10,25 +10,22 @@ export const getDictionary = createAsyncThunk<
   IDictionary[][] | undefined,
   void,
   { rejectValue: AxiosError }
->('dictionary/getDictionary', async (_, thunkAPI) => {
+>('dictionary/getDictionary', async (_, { rejectWithValue }) => {
   try {
-    // const response = await fetchDictionary();
     const response = await Promise.all(
-      DICTIONARY_CODES.map((item) =>
-        API.get<IDictionary[][]>(`dictionary/${item}`),
-      ),
+      DICTIONARY_CODES.map((item) => API.get(`dictionary/${item}`)),
     );
 
     const data = Array.from(response).map((item) => item.data);
     if (data) {
       return data;
     } else {
-      return thunkAPI.rejectWithValue(data);
+      return rejectWithValue(data);
     }
   } catch (err) {
     if (err instanceof AxiosError) {
       console.log('Error', err.response?.data);
-      thunkAPI.rejectWithValue(err.response?.data);
+      rejectWithValue(err.response?.data);
     }
   }
 });

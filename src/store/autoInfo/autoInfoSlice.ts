@@ -4,6 +4,7 @@ import { AxiosError } from 'axios';
 import type { RootState } from '../store';
 import { IAutoData } from '../../types/types';
 import API from '../../api/api';
+import { SERVER_RESPONCE_CODE } from '../../const/const';
 
 export const getAutoInfo = createAsyncThunk<
   IAutoData[],
@@ -14,7 +15,7 @@ export const getAutoInfo = createAsyncThunk<
     const response = await API.get('dictionary/AUTO');
 
     const data = await response.data;
-    if (response.status === 200) {
+    if (response.status === SERVER_RESPONCE_CODE.SUCCESS) {
       return data;
     } else {
       return thunkAPI.rejectWithValue(data);

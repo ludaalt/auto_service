@@ -1,8 +1,8 @@
 export const AUTH_TIMEOUT = 600000;
-export const SUCCESS_AUTH_STATUS = 201;
 
 export enum SERVER_RESPONCE_CODE {
   SUCCESS = 200,
+  AUTH_SUCCESS = 201,
 }
 
 export const DICTIONARY_CODES = [

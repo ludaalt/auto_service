@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { AxiosError } from 'axios';
 
-import { SUCCESS_AUTH_STATUS } from '../../const/const';
+import { SERVER_RESPONCE_CODE } from '../../const/const';
 import { ILogin } from '../../types/types';
 import type { RootState } from '../store';
 import API from '../../api/api';
@@ -20,7 +20,7 @@ export const loginUser = createAsyncThunk<
     const response = await API.post('/auth', authData);
     const data = await response.data;
 
-    if (response.status === SUCCESS_AUTH_STATUS) {
+    if (response.status === SERVER_RESPONCE_CODE.AUTH_SUCCESS) {
       localStorage.setItem('token', data['access_token']);
       return data;
     }

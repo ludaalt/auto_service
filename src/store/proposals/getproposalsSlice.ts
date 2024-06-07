@@ -26,7 +26,7 @@ export const deleteProposal = createAsyncThunk<
   void,
   number,
   { rejectValue: AxiosError }
->('api/deleteProposal', async (id, { rejectWithValue }) => {
+>('proposals/deleteProposal', async (id, { rejectWithValue }) => {
   try {
     const response = await API.delete(`/proposal/${id}`);
 
@@ -93,14 +93,31 @@ export const getProposalById = createAsyncThunk<
   }
 });
 
+export const getProposalStatus = createAsyncThunk<
+  string,
+  number,
+  { rejectValue: AxiosError }
+>('proposals/getProposalStatus', async (id, { rejectWithValue }) => {
+  try {
+    const response = await API.get(`/proposal/${id}/status`);
+
+    return response.data;
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      console.log('Error', err.response?.data);
+      return rejectWithValue(err.response?.data);
+    }
+  }
+});
+
 export const sentReadyDraft = createAsyncThunk<
   void,
   IProposal,
   { rejectValue: AxiosError }
 >('proposals/sentReadyDraft', async (proposal, { rejectWithValue }) => {
   try {
-    const response = await API.get(`/proposal/${proposal.id}/status`);
-    await API.put('/proposal', { ...proposal, status: 'PENDING' });
+    const ID = proposal.id;
+    const response = await API.get(`/proposal/${ID}/send`);
 
     return response.data;
   } catch (err) {
@@ -119,8 +136,8 @@ export const ProposalsSlice = createSlice({
     isSuccess: false,
     isError: false,
     errorMessage: '',
-    waitProposalStatus: false,
     currentProposal: null as IProposal,
+    currentProposalStatus: '',
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -155,6 +172,7 @@ export const ProposalsSlice = createSlice({
       .addCase(deleteProposal.pending, (state) => {
         state.isFetching = true;
       })
+
       .addCase(createNewProposal.fulfilled, (state, { payload }) => {
         state.data = state.data.concat(payload as IProposal);
         state.isFetching = false;
@@ -202,8 +220,6 @@ export const ProposalsSlice = createSlice({
             : item,
         );
 
-        state.waitProposalStatus = true;
-
         state.isFetching = false;
         state.isSuccess = true;
         return state;
@@ -223,6 +239,24 @@ export const ProposalsSlice = createSlice({
         state.errorMessage = (payload as AxiosError).message;
       })
       .addCase(getProposalById.pending, (state) => {
+        state.isFetching = true;
+      })
+
+      .addCase(getProposalStatus.fulfilled, (state, { payload }) => {
+        if (payload !== 'PENDING') {
+          state.currentProposal.status.code = payload;
+        }
+
+        state.isFetching = false;
+        state.isSuccess = true;
+        return state;
+      })
+      .addCase(getProposalStatus.rejected, (state, { payload }) => {
+        state.isFetching = false;
+        state.isError = true;
+        state.errorMessage = (payload as AxiosError).message;
+      })
+      .addCase(getProposalStatus.pending, (state) => {
         state.isFetching = true;
       });
   },

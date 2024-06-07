@@ -21,7 +21,7 @@ export interface ILogin {
 export interface IPersonType {
   lastName: string;
   firstName: string;
-  driverLicense?: string;
+  driverLicense: string;
   email: string;
 }
 
